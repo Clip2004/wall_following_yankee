@@ -35,8 +35,8 @@ class ControlYankeeNode(Node): # Redefine node class
         self.error_1 = 0.0
         self.th = 0.0  # Current angle
         self.th_d = 0.0  # Desired angle
-        self.kp = 1.5  # Proportional gain
-        self.kd = 3 # Derivative gain
+        # self.kp = 1.5  # Proportional gain
+        # self.kd = 3 # Derivative gain
         self.max_angle_rad = math.radians(30)  # Maximum angle in radians (30 degrees)
         self.min_angle_rad = math.radians(-30)
         self.linear_velocity = 0.5
@@ -45,19 +45,29 @@ class ControlYankeeNode(Node): # Redefine node class
         self.error = msg.data
         self.th_d = self.kp * self.error + self.kd * ((self.error - self.error_1) / self.timer_period)
         self.th = self.th_d
-        self.error_1 = self.error
         # Adjust linear velocity based on error magnitude
         error_abs = abs(self.error)
         # Clamp error_abs to a reasonable range to avoid negative speeds
         error_abs = min(error_abs, 1.0)
-        self.linear_velocity = self.max_speed - (self.max_speed - self.min_speed) * error_abs
+        if self.th < 0.005 and self.th > -0.005:
+            self.linear_velocity = self.max_speed - (self.max_speed - self.min_speed) * error_abs
+        else:
+            self.linear_velocity = self.min_speed
     def control_callback(self):
         cmd_vel_ctrl = Twist()
         cmd_vel_ctrl.linear.x = self.linear_velocity
-        # Saturate th to be within -90 to 90 degrees (converted to radians)
-        self.th = max(min(self.th, self.max_angle_rad), self.min_angle_rad)
+        if (self.error - self.error_1) == 0:
+            if self.error > 0:
+                self.th = math.radians(-30)  
+            else:
+                self.th = math.radians(30)
+        else:
+            # Saturate th to be within -90 to 90 degrees (converted to radians)
+            self.th = max(min(self.th, self.max_angle_rad), self.min_angle_rad)
         cmd_vel_ctrl.angular.z = self.th
         self.cmd_vel_ctrl_pub.publish(cmd_vel_ctrl)
+        # Update error_1 after using it for comparison
+        self.error_1 = self.error
 
 def main(args=None):
     rclpy.init(args=args)
