@@ -27,6 +27,10 @@ def generate_launch_description():
     max_speed = LaunchConfiguration('max_speed')
     min_speed = LaunchConfiguration('min_speed')
 
+    AEBSystem_node = Node(package=package_name,
+                          executable='AEBSystem',
+                          name='AEBSystem_node',
+    )
     dist_finder_yankee = Node(package=package_name,
                              executable='dist_finder_yankee',
                              name='dist_finder_yankee_node',
@@ -45,5 +49,6 @@ def generate_launch_description():
 # Launch them all!
     return LaunchDescription([
         dist_finder_yankee,
-        control_yankee
+        control_yankee,
+        AEBSystem_node
     ])

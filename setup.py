@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'dist_finder_yankee = wall_following_yankee.dist_finder_yankee:main',
             'control_yankee = wall_following_yankee.control_yankee:main',
+            'AEBSystem = wall_following_yankee.AEBSystem:main',
         ],
     },
 )

@@ -28,7 +28,7 @@ class DistFinderNode(Node):
         self.CD = 0.0
         self.AC = 0.2 # 20 cm
         self.e = 0.0
-        self.tray_d = 2.0 # Distancia deseada al muro
+        self.tray_d = 1.5 # Distancia deseada al muro
 
     def getRanges(self, msg, index_a, index_b):
         # Verifica índices válidos y guarda distancias
