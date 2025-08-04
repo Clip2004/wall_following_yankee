@@ -23,7 +23,7 @@ class ControlYankeeNode(Node): # Redefine node class
 
         # obj (msg_type,topic_name, callback_handler, buffer) 
         self.error_sub = self.create_subscription(Float32,'/error',self.error_callback,10)
-
+        self.front_distance_sub = self.create_subscription(Float32, '/front_distance', self.front_distance_callback,10)
         # publisher obj (msg_type, topic_name, queue==buffer)
         self.cmd_vel_ctrl_pub = self.create_publisher(Twist,'cmd_vel_ctrl',10)
         # create a timer function to send msg
@@ -34,12 +34,13 @@ class ControlYankeeNode(Node): # Redefine node class
         self.error = 0.0
         self.error_1 = 0.0
         self.th = 0.0  # Current angle
-        self.th_d = 0.0  # Desired angle
+        self.th_d = 0.0  # Desired anglef
         # self.kp = 1.5  # Proportional gain
         # self.kd = 3 # Derivative gain
-        self.max_angle_rad = math.radians(30)  # Maximum angle in radians (30 degrees)
-        self.min_angle_rad = math.radians(-30)
+        self.max_angle_rad = math.radians(90)  # Maximum angle in radians (30 degrees)
+        self.min_angle_rad = math.radians(-90)
         self.linear_velocity = 0.5
+        self.front_distance = 1.0  # Agregar esta línea - inicializar front_distance
     def error_callback(self, msg):
         # Example: Accessing error data
         self.error = msg.data
@@ -49,8 +50,12 @@ class ControlYankeeNode(Node): # Redefine node class
         error_abs = abs(self.error)
         # Clamp error_abs to a reasonable range to avoid negative speeds
         error_abs = min(error_abs, 1.0)
-        if self.th < 0.005 and self.th > -0.005:
-            self.linear_velocity = self.max_speed - (self.max_speed - self.min_speed) * error_abs
+        th_treshold = 0.01  # Threshold for angle adjustment
+        if self.th < th_treshold and self.th > -th_treshold and self.front_distance > 1.5:
+            # Suaviza el cambio de velocidad usando interpolación exponencial
+            target_velocity = self.max_speed - (self.max_speed - self.min_speed) * error_abs
+            alpha = 0.1  # Factor de suavizado (entre 0 y 1)
+            self.linear_velocity += alpha * (target_velocity - self.linear_velocity)
         else:
             self.linear_velocity = self.min_speed
     def control_callback(self):
@@ -58,9 +63,9 @@ class ControlYankeeNode(Node): # Redefine node class
         cmd_vel_ctrl.linear.x = self.linear_velocity
         if (self.error - self.error_1) == 0:
             if self.error > 0:
-                self.th = math.radians(-30)  
+                self.th = math.radians(-45)  
             else:
-                self.th = math.radians(30)
+                self.th = math.radians(45)
         else:
             # Saturate th to be within -90 to 90 degrees (converted to radians)
             self.th = max(min(self.th, self.max_angle_rad), self.min_angle_rad)
@@ -68,7 +73,10 @@ class ControlYankeeNode(Node): # Redefine node class
         self.cmd_vel_ctrl_pub.publish(cmd_vel_ctrl)
         # Update error_1 after using it for comparison
         self.error_1 = self.error
-
+    def front_distance_callback(self, msg):
+        # Example: Accessing front distance data
+            self.front_distance = msg.data
+        
 def main(args=None):
     rclpy.init(args=args)
     node = ControlYankeeNode() # object definition (creation)
